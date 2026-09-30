@@ -1,0 +1,13 @@
+:root {
+    background-color: lightblue;
+}
+
+h1 {
+    color: rgb(65, 138, 65);
+    font-family: Arial, sans-serif;
+    justify-content: center;
+    text-align: center;
+    font-size: 30px;
+    font-weight: bold;
+}
+
