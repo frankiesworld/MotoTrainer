@@ -116,7 +116,17 @@ function getLapDeltas(session) {
     return lapDeltas;
 }
 
-/*----------------------------------------FOMATTING----------------------------------------*/
+function addLap(session, time) {
+    const newLap = {
+        lap: session.laps.length + 1,
+        time: time
+    };
+    session.laps.push(newLap);
+}
+
+
+
+/*----------------------------------------FORMATTING----------------------------------------*/
 // 63.591 -> 1:03.591
 function formatLapTime(seconds) {
     const minutes = Math.floor(seconds / 60);
@@ -130,59 +140,97 @@ function formatLapTime(seconds) {
     
 }
 
-// 8.582 -> +8.582s
+// 8.582 -> +8.58s
 function formatGap(seconds) {
     return "+" + seconds.toFixed(2) + "s";
 }
 
 
+function parseLapTime(text) {
+    const parts = text.split(":");
+
+    const minutes = Number(parts[0]);
+    const seconds = Number(parts[1]);
+
+    const totalSeconds = minutes * 60 + seconds;
+
+    return totalSeconds;
+}
+
 /*----------------------------------------DISPLAY----------------------------------------*/
 
 // stat cards
 const fastestTimeElement = document.getElementById("fastest-time");
-fastestTimeElement.textContent = formatLapTime(getFastestLap(session).time);
-
 const slowestTimeElement = document.getElementById("slowest-time");
-slowestTimeElement.textContent = formatLapTime(getSlowestLap(session).time);
-
 const averageTimeElement = document.getElementById("average-time");
-averageTimeElement.textContent = formatLapTime(getAverageLap(session));
-
-
 const spreadTimeElement = document.getElementById("spread-time");
-spreadTimeElement.textContent = formatGap(getLapSpread(session));
+
 
 // Lap list
 const lapListElement = document.getElementById("lap-list");
-const lapData = getLapDeltas(session);
+
+// Update the display with the current session data
+function updateDisplay() {
+
+    // Update stat cards
+     fastestTimeElement.textContent = formatLapTime(getFastestLap(session).time);
+     slowestTimeElement.textContent = formatLapTime(getSlowestLap(session).time);
+     averageTimeElement.textContent = formatLapTime(getAverageLap(session));
+     spreadTimeElement.textContent = formatGap(getLapSpread(session));
+
+    // Update lap list
+     lapListElement.innerHTML = "";
+
+     const lapData = getLapDeltas(session);
     
-for (const lap of lapData) {
-    // 1. create
-    const lapRow = document.createElement("div");
-    const lapNumber = document.createElement("span");
-    const lapTime = document.createElement("span");
-    const lapDelta = document.createElement("span");
-    // 2. Classes
-    lapRow.className = "lap-row";
-    lapNumber.className = "lap-number";
-    lapTime.className = "lap-time";
-    lapDelta.className = "lap-delta";
+     for (const lap of lapData) {
 
-    // 3. Text
-    lapNumber.textContent = "Lap" + lap.lap;
-    lapTime.textContent = formatLapTime(lap.time);
-   
-    if (lap.delta === 0) {
-        lapDelta.textContent = "( BEST LAP )";
-    } else {
-        lapDelta.textContent = formatGap(lap.delta);
+        // Create a new row for each lap
+        const lapRow = document.createElement("div");
+        const lapNumber = document.createElement("span");
+        const lapTime = document.createElement("span");
+        const lapDelta = document.createElement("span");
+
+        // Add the lap number, time, and delta to the row
+        lapRow.className = "lap-row";
+        lapNumber.className = "lap-number";
+        lapTime.className = "lap-time";
+        lapDelta.className = "lap-delta";
+
+        // Set the text content for each element
+        lapNumber.textContent = "Lap " + lap.lap;    
+        lapTime.textContent = formatLapTime(lap.time);
+        if (lap.delta === 0) {
+            lapDelta.textContent = "( BEST LAP )";
+            lapRow.classList.add("best-lap");
+        } else {
+            lapDelta.textContent = formatGap(lap.delta);
+        }
+        
+        // attatch the elements to the lap row and then to the lap list
+        lapRow.appendChild(lapNumber);
+        lapRow.appendChild(lapTime);
+        lapRow.appendChild(lapDelta);
+        lapListElement.appendChild(lapRow);
     }
-
-    // 4. attach
-    lapRow.appendChild(lapNumber);
-    lapRow.appendChild(lapTime);
-    lapRow.appendChild(lapDelta);
-    lapListElement.appendChild(lapRow);
-
 }
+
+updateDisplay();
+
+
+/*----------------------------------------EVENTS----------------------------------------*/
+
+const lapInput = document.getElementById("lap-input");
+const addLapButton = document.getElementById("add-lap-button");
+
+addLapButton.addEventListener("click", function() {
+    const lapTimeInput = lapInput.value;
+    const lapTime = parseLapTime(lapTimeInput);
+
+    if (!Number.isNaN(lapTime)) {
+        addLap(session, lapTime);
+        updateDisplay();
+        lapInput.value = "";
+    }
+});
 

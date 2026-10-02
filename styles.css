@@ -61,3 +61,14 @@ h1 {
     margin-right: 100px;
 }
 
+.lap-number {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.best-lap {
+    font-weight: bold;
+    color: rgb(65, 138, 65);
+    
+}
+
