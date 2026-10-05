@@ -11,8 +11,11 @@
 
     <section class="container-one">
 
-    <h2>Track: Bakers West SX</h2>
-    <h3>Session: 10 laps</h3>
+    <h2> Track:
+        <span id="track-name"></span>
+    </h2>
+    
+    <h3>Lap Count: <span id="lap-count"></span></h3>
     <h2>Results</h2>
     <div class="container-two">
     <div class="card">
@@ -31,10 +34,12 @@
             <p class="label">Spread</p>
             <p id="spread-time"></p>
         </div>
-        <div class="card">
-            <p class="label">Coaches Notes</p>
-            <p id="coaches-notes"></p>
-        </div>
+    </div>
+
+    <div class="session-entry">
+        <label for="session-input">Practice Session</label>
+        <textarea id="session-input" placeholder="1:12.173&#10;1:11.547&#10;1:07.485"></textarea>
+        <button id="import-session-button">Import Session</button>
     </div>
 
     <div class="lap-entry">
@@ -42,6 +47,15 @@
         <input id="lap-input" type="text" placeholder="1:07.532">
         <button id="add-lap-button">Add Lap</button>
     </div>
+
+    <div class="new-session">
+        <button id="new-session-button">New Session</button>
+    </div>
+
+        <div class="card">
+            <p class="label">Coach's Notes</p>
+            <p id="coach-note"></p>
+        </div>
 
     <div class="lap-analysis">
         <h2>Lap Analysis</h2>

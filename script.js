@@ -2,53 +2,8 @@
 
 /*----------------------------------------------------DATA ------------------------------------------------------*/
 
-const session = {
-    track: "Bakers West SX", 
-    laps: [
-        {
-            lap: 1,
-            time: 72.173
-            
-        },
-        {
-            lap: 2,
-            time: 71.547
-        },
-        {
-            lap: 3,
-            time: 67.485
-        },
-        {
-            lap: 4,
-            time: 66.970
-        },
-        {
-            lap: 5,
-            time: 67.854
-        },
-        {
-            lap: 6,
-            time: 66.925   
-        },
-        {
-            lap: 7,
-            time: 66.371
-        },
-        {
-            lap: 8,
-            time: 65.702
-        },
-        {
-            lap: 9,
-            time: 63.591 
-        },
-        {
-            lap: 10,
-            time: 68.271
-        }
-        
-    ]        
-}
+const session = loadSession();
+
 
 /*----------------------------------------------Logic--------------------------------------*/
 // fastest lap: and keeps best
@@ -75,19 +30,6 @@ function getSlowestLap(session) {
     }
 
     return slowestLap;
-}
-
-
-// Average lap: adds all laps and divides by number of laps
-function getAverageLap(session) {
-    let total = 0;
-
-    for (const lap of session.laps) {
-        total += lap.time;
-    }
-
-    const average = total / session.laps.length;
-    return average;
 }
 
 
@@ -124,6 +66,58 @@ function addLap(session, time) {
     session.laps.push(newLap);
 }
 
+// Split session into two halves
+ function getSessionHalves(session) {
+    const half = Math.floor(session.laps.length / 2);
+    const firstHalf = session.laps.slice(0, half);
+    const secondHalf = session.laps.slice(half);
+    return {
+        firstHalf: firstHalf,
+        secondHalf: secondHalf
+    };
+}
+
+// Average time of any array of laps ( whole session or half)
+function getAverageTime(laps) {
+        let total = 0;
+
+    for (const lap of laps) {
+        total += lap.time;
+    }
+
+    const average = total / laps.length;
+    return average;
+}
+
+// Pace trend: second half average - first half average
+// positive value indicates slowing down, negative value indicates speeding up
+function getPaceTrend(session) {
+    const { firstHalf, secondHalf } = getSessionHalves(session);
+    const firstHalfAverage = getAverageTime(firstHalf);
+    const secondHalfAverage = getAverageTime(secondHalf);
+
+    return secondHalfAverage - firstHalfAverage;
+}
+
+// Coach note based on pace trend
+function getCoachNote(session) {
+
+   if (session.laps.length < 4) {
+        return "No pace trend available (not enough laps)";
+    }
+
+    const paceTrend = getPaceTrend(session);
+    const gap = Math.abs(paceTrend).toFixed(2);
+
+    if (paceTrend > 1) {
+        return "Fading, Second half was " + gap + "s" + " slower than the first half! Focus on your lines and throttle control!";
+    } else if (paceTrend < -1) {
+        return "Chipping away! Second half was " + gap + "s" + " faster! Keep Pushing!";
+    } else {
+        return "Head down! Flow! " + gap + "s" + " Keep it up!";
+    }
+    
+}
 
 
 /*----------------------------------------FORMATTING----------------------------------------*/
@@ -157,6 +151,26 @@ function parseLapTime(text) {
     return totalSeconds;
 }
 
+
+/*----------------------------------------STORAGE----------------------------------------*/
+function saveSession(session) {
+    const sessionJSON = JSON.stringify(session);
+    localStorage.setItem("session", sessionJSON);
+}
+
+function loadSession() {
+    const sessionJSON = localStorage.getItem("session");
+    if (sessionJSON) {
+        return JSON.parse(sessionJSON);
+    }
+    return {
+        track: "Bakers West SX",
+        bike: "",
+        rider: "",
+        laps: []
+    };
+}
+
 /*----------------------------------------DISPLAY----------------------------------------*/
 
 // stat cards
@@ -164,19 +178,47 @@ const fastestTimeElement = document.getElementById("fastest-time");
 const slowestTimeElement = document.getElementById("slowest-time");
 const averageTimeElement = document.getElementById("average-time");
 const spreadTimeElement = document.getElementById("spread-time");
+const trackNameElement = document.getElementById("track-name");
+const lapCountElement = document.getElementById("lap-count");
+const coachNoteElement = document.getElementById("coach-note");
+
 
 
 // Lap list
 const lapListElement = document.getElementById("lap-list");
 
+// Practice session input
+const sessionInputElement = document.getElementById("session-input");
+const importSessionButton = document.getElementById("import-session-button");
+
+
+
 // Update the display with the current session data
 function updateDisplay() {
 
+  // Session INFO
+    trackNameElement.textContent = session.track;
+    lapCountElement.textContent = session.laps.length;
+
+    if (session.laps.length === 0) {
+        lapListElement.innerHTML = "";
+        fastestTimeElement.textContent = "--:---";
+        slowestTimeElement.textContent = "--:---";
+        averageTimeElement.textContent = "--:---";
+        spreadTimeElement.textContent = "--:---";
+        coachNoteElement.textContent = "Spin some Laps you Bozo!";
+
+        return;
+    }
+
+
+
     // Update stat cards
-     fastestTimeElement.textContent = formatLapTime(getFastestLap(session).time);
-     slowestTimeElement.textContent = formatLapTime(getSlowestLap(session).time);
-     averageTimeElement.textContent = formatLapTime(getAverageLap(session));
-     spreadTimeElement.textContent = formatGap(getLapSpread(session));
+    fastestTimeElement.textContent = formatLapTime(getFastestLap(session).time);
+    slowestTimeElement.textContent = formatLapTime(getSlowestLap(session).time);
+    averageTimeElement.textContent = formatLapTime(getAverageTime(session.laps));
+    spreadTimeElement.textContent = formatGap(getLapSpread(session));
+    coachNoteElement.textContent = getCoachNote(session);
 
     // Update lap list
      lapListElement.innerHTML = "";
@@ -215,6 +257,7 @@ function updateDisplay() {
     }
 }
 
+
 updateDisplay();
 
 
@@ -222,6 +265,7 @@ updateDisplay();
 
 const lapInput = document.getElementById("lap-input");
 const addLapButton = document.getElementById("add-lap-button");
+const newSessionButton = document.getElementById("new-session-button");
 
 addLapButton.addEventListener("click", function() {
     const lapTimeInput = lapInput.value;
@@ -229,8 +273,35 @@ addLapButton.addEventListener("click", function() {
 
     if (!Number.isNaN(lapTime)) {
         addLap(session, lapTime);
+        saveSession(session);
         updateDisplay();
         lapInput.value = "";
     }
 });
 
+
+importSessionButton.addEventListener("click", function() {
+    const sessionText = sessionInputElement.value;
+    const lapTimes = sessionText.split("\n") 
+    
+    session.laps = [];        // Clear existing laps before loading new ones
+
+    for (const lapTimeText of lapTimes) {
+        const lapTime = parseLapTime(lapTimeText.trim());
+        if (!Number.isNaN(lapTime)) {
+            addLap(session, lapTime);
+        }
+    }
+    saveSession(session);
+    updateDisplay();
+});
+
+newSessionButton.addEventListener("click", function() {
+    if (confirm("Are you sure you want to start a new session? This will clear all current laps.")) {
+        session.laps = [];
+        saveSession(session);
+        updateDisplay();
+    }
+});
+
+ 
