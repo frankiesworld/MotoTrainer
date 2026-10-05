@@ -102,16 +102,20 @@ function getPaceTrend(session) {
 // Coach note based on pace trend
 function getCoachNote(session) {
 
-   if (session.laps.length < 4) {
+    if (session.laps.length < 4) {
         return "No pace trend available (not enough laps)";
     }
+
+    const thresholdPercent = 0.01; // 1% threshold
+    const averageTime = getAverageTime(session.laps);
+    const threshold = averageTime * thresholdPercent;
 
     const paceTrend = getPaceTrend(session);
     const gap = Math.abs(paceTrend).toFixed(2);
 
-    if (paceTrend > 1) {
+    if (paceTrend > threshold) {
         return "Fading, Second half was " + gap + "s" + " slower than the first half! Focus on your lines and throttle control!";
-    } else if (paceTrend < -1) {
+    } else if (paceTrend < -threshold) {
         return "Chipping away! Second half was " + gap + "s" + " faster! Keep Pushing!";
     } else {
         return "Head down! Flow! " + gap + "s" + " Keep it up!";
