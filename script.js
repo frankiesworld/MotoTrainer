@@ -3,6 +3,7 @@
 /*----------------------------------------------------DATA ------------------------------------------------------*/
 
 const session = loadSession();
+const sessionHistory = loadHistory();
 
 
 /*----------------------------------------------Logic--------------------------------------*/
@@ -123,6 +124,28 @@ function getCoachNote(session) {
     
 }
 
+function archiveSession(session, sessionHistory) {
+    if (session.laps.length === 0) {
+        return; // Only archive if there are laps in the session
+    }
+
+    const archivedSession = {
+        date: new Date().toLocaleString(),
+        track: session.track,
+        bike: session.bike,
+        rider: session.rider,
+        laps: session.laps.slice() // Create a copy of the laps array
+    };
+    sessionHistory.push(archivedSession);
+}
+
+function restoreSession(session, pastSession) {
+    session.track = pastSession.track;
+    session.bike = pastSession.bike;
+    session.rider = pastSession.rider;
+    session.laps = pastSession.laps.slice();
+}
+
 
 /*----------------------------------------FORMATTING----------------------------------------*/
 // 63.591 -> 1:03.591
@@ -175,6 +198,19 @@ function loadSession() {
     };
 }
 
+function saveHistory(history) {
+    const historyJSON = JSON.stringify(history);
+    localStorage.setItem("history", historyJSON);
+}
+
+function loadHistory() {
+    const historyJSON = localStorage.getItem("history");
+    if (historyJSON) {
+        return JSON.parse(historyJSON);
+    }
+    return [];
+}
+
 /*----------------------------------------DISPLAY----------------------------------------*/
 
 // stat cards
@@ -185,6 +221,7 @@ const spreadTimeElement = document.getElementById("spread-time");
 const trackNameElement = document.getElementById("track-name");
 const lapCountElement = document.getElementById("lap-count");
 const coachNoteElement = document.getElementById("coach-note");
+const historySelect = document.getElementById("history-select");
 
 
 
@@ -261,15 +298,27 @@ function updateDisplay() {
     }
 }
 
+function renderHistory() {
+    historySelect.innerHTML = ""; // Clear existing options
+    // Loop through the history and create a new option for each session
+    for (let i = 0; i < sessionHistory.length; i++) {
+        const pastSession = sessionHistory[i];
+        const option = document.createElement("option");
+        option.value = i;
+        option.textContent = `${pastSession.date} - ${pastSession.track} - ${pastSession.laps.length} laps`;
+        historySelect.appendChild(option);
+    }
+}
 
 updateDisplay();
-
+renderHistory();
 
 /*----------------------------------------EVENTS----------------------------------------*/
 
 const lapInput = document.getElementById("lap-input");
 const addLapButton = document.getElementById("add-lap-button");
 const newSessionButton = document.getElementById("new-session-button");
+const loadHistoryButton = document.getElementById("load-history-button");
 
 addLapButton.addEventListener("click", function() {
     const lapTimeInput = lapInput.value;
@@ -301,11 +350,33 @@ importSessionButton.addEventListener("click", function() {
 });
 
 newSessionButton.addEventListener("click", function() {
-    if (confirm("Are you sure you want to start a new session? This will clear all current laps.")) {
+    if (confirm("Are you sure you want to start a new session? Your current session will be saved to History.")) {
+        archiveSession(session, sessionHistory);
+        saveHistory(sessionHistory);
+        renderHistory();
         session.laps = [];
         saveSession(session);
         updateDisplay();
     }
 });
+
+loadHistoryButton.addEventListener("click", function() {
+    if (sessionHistory.length === 0) {
+        alert("No sessions from history to load.");
+        return;
+    }
+
+    const index = Number(historySelect.value);
+    const pastSession = sessionHistory[index];
+    if (confirm("Your current laps will be replaced.")) {
+        restoreSession(session, pastSession);
+        saveSession(session);
+        updateDisplay();
+    }
+});
+
+
+
+
 
  
