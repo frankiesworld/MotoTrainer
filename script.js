@@ -44,25 +44,45 @@ function getLapSpread(session) {
 
 // Gap to fastest lap time
 function getLapDeltas(session) {
-    const fastestLap = getFastestLap(session);
+    const fastestLap = getFastestLap({ laps: getValidLaps(session.laps) });
     const lapDeltas = [];
+    let fastestTime = 0;
+
+    if (fastestLap !== undefined) {
+        fastestTime = fastestLap.time;
+    }
+
 
     for (const lap of session.laps) {
-        const delta = lap.time - fastestLap.time;
+        const delta = lap.time - fastestTime;
         const lapData = {
             lap: lap.lap,
             time: lap.time,
-            delta: delta
+            delta: delta,
+            invalid: lap.invalid
         };
         lapDeltas.push(lapData);
     }
     return lapDeltas;
 }
 
+function getValidLaps(laps) {
+    const validLaps = [];
+
+    for (const lap of laps) {
+        if (!lap.invalid) {
+            validLaps.push(lap);
+        }
+    }
+    return validLaps; 
+
+}
+
 function addLap(session, time) {
     const newLap = {
         lap: session.laps.length + 1,
-        time: time
+        time: time, 
+        invalid: false
     };
     session.laps.push(newLap);
 }
@@ -241,6 +261,11 @@ function updateDisplay() {
     trackNameElement.textContent = session.track;
     lapCountElement.textContent = session.laps.length;
 
+    const validSession = {
+        track: session.track,
+        laps: getValidLaps(session.laps)
+    };
+
     if (session.laps.length === 0) {
         lapListElement.innerHTML = "";
         fastestTimeElement.textContent = "--:---";
@@ -252,14 +277,20 @@ function updateDisplay() {
         return;
     }
 
-
-
-    // Update stat cards
-    fastestTimeElement.textContent = formatLapTime(getFastestLap(session).time);
-    slowestTimeElement.textContent = formatLapTime(getSlowestLap(session).time);
-    averageTimeElement.textContent = formatLapTime(getAverageTime(session.laps));
-    spreadTimeElement.textContent = formatGap(getLapSpread(session));
-    coachNoteElement.textContent = getCoachNote(session);
+   if (!validSession.laps.length) {
+        fastestTimeElement.textContent = "--:---";
+        slowestTimeElement.textContent = "--:---";
+        averageTimeElement.textContent = "--:---";
+        spreadTimeElement.textContent = "--:---";
+        coachNoteElement.textContent = "flow dont force anything!";
+    } else {
+           // Update stat cards
+            fastestTimeElement.textContent = formatLapTime(getFastestLap(validSession).time);
+            slowestTimeElement.textContent = formatLapTime(getSlowestLap(validSession).time);
+            averageTimeElement.textContent = formatLapTime(getAverageTime(validSession.laps));
+            spreadTimeElement.textContent = formatGap(getLapSpread(validSession));
+            coachNoteElement.textContent = getCoachNote(validSession);
+    }
 
     // Update lap list
      lapListElement.innerHTML = "";
@@ -283,7 +314,11 @@ function updateDisplay() {
         // Set the text content for each element
         lapNumber.textContent = "Lap " + lap.lap;    
         lapTime.textContent = formatLapTime(lap.time);
-        if (lap.delta === 0) {
+
+        if (lap.invalid) {
+            lapDelta.textContent = "( INVALID LAP )";
+            lapRow.classList.add("invalid-lap");
+        } else if (lap.delta === 0) {
             lapDelta.textContent = "( BEST LAP )";
             lapRow.classList.add("best-lap");
         } else {
@@ -376,7 +411,3 @@ loadHistoryButton.addEventListener("click", function() {
 });
 
 
-
-
-
- 
