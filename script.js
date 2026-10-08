@@ -2,6 +2,8 @@
 
 /*----------------------------------------------------DATA ------------------------------------------------------*/
 
+const SESSION_VERSION = 1;
+
 const session = loadSession();
 const sessionHistory = loadHistory();
 
@@ -154,7 +156,8 @@ function archiveSession(session, sessionHistory) {
         track: session.track,
         bike: session.bike,
         rider: session.rider,
-        laps: session.laps.slice() // Create a copy of the laps array
+        laps: session.laps.slice(), // Create a copy of the laps array
+        version: SESSION_VERSION
     };
     sessionHistory.push(archivedSession);
 }
@@ -165,6 +168,20 @@ function restoreSession(session, pastSession) {
     session.rider = pastSession.rider;
     session.laps = pastSession.laps.slice();
 }
+
+function migrateSession(saved) {
+    if(saved.version === undefined) {
+        if (saved.bike === undefined) {
+            saved.bike = "";
+        }
+        if (saved.rider === undefined) {
+            saved.rider = "";
+        }
+    saved.version = 1;
+    }
+        return saved;
+}
+
 
 
 /*----------------------------------------FORMATTING----------------------------------------*/
@@ -208,13 +225,14 @@ function saveSession(session) {
 function loadSession() {
     const sessionJSON = localStorage.getItem("session");
     if (sessionJSON) {
-        return JSON.parse(sessionJSON);
+        return migrateSession(JSON.parse(sessionJSON));
     }
     return {
         track: "Bakers West SX",
         bike: "",
         rider: "",
-        laps: []
+        laps: [],
+        version: SESSION_VERSION
     };
 }
 
@@ -226,7 +244,12 @@ function saveHistory(history) {
 function loadHistory() {
     const historyJSON = localStorage.getItem("history");
     if (historyJSON) {
-        return JSON.parse(historyJSON);
+        const savedHistory = JSON.parse(historyJSON);
+        for (const pastSession of savedHistory) {
+            migrateSession(pastSession);
+        }
+
+        return savedHistory;
     }
     return [];
 }
