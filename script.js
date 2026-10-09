@@ -91,6 +91,34 @@ function getValidLaps(laps) {
 
 }
 
+
+function getChartData(session) {
+    const chartLabels = [];
+    const chartTimes = [];
+    const chartColors = [];
+
+    for (const lapData of getLapDeltas(session)) {
+        chartLabels.push("Lap " + lapData.lap);
+        chartTimes.push(lapData.time);
+
+        if (lapData.invalid) {
+            chartColors.push("red");
+        } else if (lapData.delta === 0) {
+            chartColors.push("green");
+        } else {
+            chartColors.push("black"); 
+        }
+
+    }
+
+    return {
+        labels: chartLabels,
+        times: chartTimes,
+        colors: chartColors
+    };
+}
+
+
 function addLap(session, time) {
     const newLap = {
         lap: session.laps.length + 1,
@@ -289,6 +317,53 @@ const sessionInputElement = document.getElementById("session-input");
 const importSessionButton = document.getElementById("import-session-button");
 
 
+// Lap trend chart: created once, then updated in updateDisplay
+const lapChartElement = document.getElementById("lap-chart");
+
+const lapChart = new Chart(lapChartElement, {
+    type: "line",
+    data: {
+        labels: [],
+        datasets: [{
+            label: "Lap Time",
+            data: [],
+            pointBackgroundColor:[],
+            pointRadius: 5
+        }]
+    },
+    options: {
+        scales: {
+            y: {
+                ticks: {
+                    //Y axis labels: 72.5->1:12.500
+                    callback: function (value) {
+                        return formatLapTime(value);
+                    }
+                }
+            }
+        },
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    // Hover text for each point
+                    label: function (context) {
+                        const lapData = getLapDeltas(session)[context.dataIndex];
+                        const time = formatLapTime(lapData.time);
+
+                        if (lapData.invalid) {
+                            return time + " · INVALID";
+                        } else if (lapData.delta === 0) {
+                            return time + " · BEST";
+                        } else {
+                            return time + " · " + formatGap(lapData.delta);
+                        }
+                    }
+                }
+            }
+        }
+    }    
+});
+
 
 // Update the display with the current session data
 function updateDisplay() {
@@ -311,6 +386,12 @@ function updateDisplay() {
         pitBoardTimeElement.textContent = "--:---";
         pitBoardNoteElement.textContent = "";
         coachNoteElement.textContent = "Spin some Laps you Bozo!";
+        
+        // Clear the lap chart
+        lapChart.data.labels = [];
+        lapChart.data.datasets[0].data = [];
+        lapChart.data.datasets[0].pointBackgroundColor = [];
+        lapChart.update();
 
         return;
     }
@@ -330,7 +411,7 @@ function updateDisplay() {
             coachNoteElement.textContent = getCoachNote(validSession);
     }
 
-
+    // PitBoard time and messsage
     const lastLap = getLastLapData(session);
     
     if (lastLap.invalid) {
@@ -344,6 +425,17 @@ function updateDisplay() {
         pitBoardNoteElement.textContent = formatGap(lastLap.delta);
     
     }
+
+    // lap trend chart
+    const chartData = getChartData(session);
+
+    lapChart.data.labels = chartData.labels;
+    lapChart.data.datasets[0].data = chartData.times;
+    lapChart.data.datasets[0].pointBackgroundColor = chartData.colors;
+
+    lapChart.update();
+
+
 
     // Update lap list
      lapListElement.innerHTML = "";
