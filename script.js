@@ -68,6 +68,17 @@ function getLapDeltas(session) {
     return lapDeltas;
 }
 
+function getLastLapData(session) {
+    const deltas = getLapDeltas(session);
+
+    if (deltas.length === 0) {
+        return null;
+    }
+
+    return deltas[deltas.length - 1];
+}
+
+
 function getValidLaps(laps) {
     const validLaps = [];
 
@@ -265,6 +276,8 @@ const trackNameElement = document.getElementById("track-name");
 const lapCountElement = document.getElementById("lap-count");
 const coachNoteElement = document.getElementById("coach-note");
 const historySelect = document.getElementById("history-select");
+const pitBoardNoteElement = document.getElementById("last-lap-note");
+const pitBoardTimeElement = document.getElementById("last-lap-time");
 
 
 
@@ -295,6 +308,8 @@ function updateDisplay() {
         slowestTimeElement.textContent = "--:---";
         averageTimeElement.textContent = "--:---";
         spreadTimeElement.textContent = "--:---";
+        pitBoardTimeElement.textContent = "--:---";
+        pitBoardNoteElement.textContent = "";
         coachNoteElement.textContent = "Spin some Laps you Bozo!";
 
         return;
@@ -313,6 +328,21 @@ function updateDisplay() {
             averageTimeElement.textContent = formatLapTime(getAverageTime(validSession.laps));
             spreadTimeElement.textContent = formatGap(getLapSpread(validSession));
             coachNoteElement.textContent = getCoachNote(validSession);
+    }
+
+
+    const lastLap = getLastLapData(session);
+    
+    if (lastLap.invalid) {
+        pitBoardTimeElement.textContent = "INVALID";
+        pitBoardNoteElement.textContent = "Relax and recover";
+    } else if (lastLap.delta === 0) {
+        pitBoardTimeElement.textContent = formatLapTime(lastLap.time);
+        pitBoardNoteElement.textContent = "Best Lap";
+    } else {
+        pitBoardTimeElement.textContent = formatLapTime(lastLap.time);
+        pitBoardNoteElement.textContent = formatGap(lastLap.delta);
+    
     }
 
     // Update lap list
