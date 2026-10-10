@@ -3,6 +3,7 @@
 /*----------------------------------------------------DATA ------------------------------------------------------*/
 
 const SESSION_VERSION = 1;
+const MIN_LAPS_FOR_TREND = 4;
 
 const session = loadSession();
 const sessionHistory = loadHistory();
@@ -96,6 +97,16 @@ function getChartData(session) {
     const chartLabels = [];
     const chartTimes = [];
     const chartColors = [];
+    const firstHalfLine = [];
+    const secondHalfLine = [];
+
+
+    const validSession = { laps: getValidLaps(session.laps) };
+    let averages = null;
+
+    if (validSession.laps.length >= MIN_LAPS_FOR_TREND) {
+        averages = getHalfAverages(validSession);
+    }
 
     for (const lapData of getLapDeltas(session)) {
         chartLabels.push("Lap " + lapData.lap);
@@ -109,12 +120,21 @@ function getChartData(session) {
             chartColors.push("black"); 
         }
 
+        if (averages) {
+            firstHalfLine.push(averages.firstHalfAverage);
+            secondHalfLine.push(averages.secondHalfAverage);
+        } else {
+           firstHalfLine.push(null);
+           secondHalfLine.push(null);
+        }
     }
 
     return {
         labels: chartLabels,
         times: chartTimes,
-        colors: chartColors
+        colors: chartColors,
+        firstHalfLine,
+        secondHalfLine
     };
 }
 
@@ -154,17 +174,27 @@ function getAverageTime(laps) {
 // Pace trend: second half average - first half average
 // positive value indicates slowing down, negative value indicates speeding up
 function getPaceTrend(session) {
-    const { firstHalf, secondHalf } = getSessionHalves(session);
-    const firstHalfAverage = getAverageTime(firstHalf);
-    const secondHalfAverage = getAverageTime(secondHalf);
-
-    return secondHalfAverage - firstHalfAverage;
+    const averages = getHalfAverages(session);
+    return averages.secondHalfAverage - averages.firstHalfAverage;
 }
+
+// Get average time of first and second half of session
+function getHalfAverages(session) {
+    const halfSector = getSessionHalves(session);
+    const firstHalfAverage = getAverageTime(halfSector.firstHalf);
+    const secondHalfAverage = getAverageTime(halfSector.secondHalf);
+
+    return {
+        firstHalfAverage,
+        secondHalfAverage
+    };
+}
+
 
 // Coach note based on pace trend
 function getCoachNote(session) {
 
-    if (session.laps.length < 4) {
+    if (session.laps.length < MIN_LAPS_FOR_TREND) {
         return "No pace trend available (not enough laps)";
     }
 
@@ -324,12 +354,28 @@ const lapChart = new Chart(lapChartElement, {
     type: "line",
     data: {
         labels: [],
-        datasets: [{
-            label: "Lap Time",
-            data: [],
-            pointBackgroundColor:[],
-            pointRadius: 5
-        }]
+        datasets: [
+            {
+                label: "Lap Time",
+                data: [],
+                pointBackgroundColor:[],
+                pointRadius: 5
+            },
+            {
+                label: "1st Half Avg",
+                data: [],
+                borderColor: "gray",
+                borderDash: [6,6],
+                pointRadius: 0
+            },
+            {
+                label: "2nd Half Avg",
+                data: [],
+                borderColor: "orange",
+                borderDash: [6,6],
+                pointRadius: 0
+            }
+        ]
     },
     options: {
         scales: {
@@ -360,7 +406,8 @@ const lapChart = new Chart(lapChartElement, {
                     }
                 }
             }
-        }
+        },
+        maintainAspectRatio: false,
     }    
 });
 
@@ -391,6 +438,9 @@ function updateDisplay() {
         lapChart.data.labels = [];
         lapChart.data.datasets[0].data = [];
         lapChart.data.datasets[0].pointBackgroundColor = [];
+        lapChart.data.datasets[1].data = [];
+        lapChart.data.datasets[2].data = [];
+       
         lapChart.update();
 
         return;
@@ -432,10 +482,10 @@ function updateDisplay() {
     lapChart.data.labels = chartData.labels;
     lapChart.data.datasets[0].data = chartData.times;
     lapChart.data.datasets[0].pointBackgroundColor = chartData.colors;
+    lapChart.data.datasets[1].data = chartData.firstHalfLine;
+    lapChart.data.datasets[2].data = chartData.secondHalfLine;
 
     lapChart.update();
-
-
 
     // Update lap list
      lapListElement.innerHTML = "";

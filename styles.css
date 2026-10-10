@@ -72,3 +72,8 @@ h1 {
     
 }
 
+.chart-container {
+    position: relative;
+    height: 400px;
+    width: 100%;
+}
