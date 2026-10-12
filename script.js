@@ -4,6 +4,7 @@
 
 const SESSION_VERSION = 1;
 const MIN_LAPS_FOR_TREND = 4;
+const THRESHOLD_PERCENT = 0.01; // 1% of average lap = "real" difference
 
 const session = loadSession();
 const sessionHistory = loadHistory();
@@ -215,6 +216,34 @@ function getCoachNote(session) {
     
 }
 
+function getPitBoardMessage(session) {
+    const lastLap = session.laps[session.laps.length - 1];
+    const previousLap = session.laps[session.laps.length - 2];
+
+    if (lastLap.invalid) {
+        return "Relax and Recover";
+    }
+    if (!previousLap) {
+        return "Sighting Lap";
+    }
+    if (previousLap.invalid) {
+        return "Clean lap, build on it";
+    }
+
+    const change = lastLap.time - previousLap.time;
+    const threshold = getAverageTime(getValidLaps(session.laps)) * THRESHOLD_PERCENT;
+
+    if (change < -threshold) {
+        return "Flying, keep Flowing";
+    } else if (change > threshold) {
+        return "Find your lines and relax";
+    } else {
+        return "Dig deep and push";
+    }
+}
+
+
+
 function archiveSession(session, sessionHistory) {
     if (session.laps.length === 0) {
         return; // Only archive if there are laps in the session
@@ -336,6 +365,9 @@ const coachNoteElement = document.getElementById("coach-note");
 const historySelect = document.getElementById("history-select");
 const pitBoardNoteElement = document.getElementById("last-lap-note");
 const pitBoardTimeElement = document.getElementById("last-lap-time");
+const pitBoardLapElement = document.getElementById("last-lap-number");
+const pitBoardBestElement = document.getElementById("best-lap-time");
+const pitBoardMessageElement = document.getElementById("pit-board-message");
 
 
 
@@ -433,6 +465,9 @@ function updateDisplay() {
         pitBoardTimeElement.textContent = "--:---";
         pitBoardNoteElement.textContent = "";
         coachNoteElement.textContent = "Spin some Laps you Bozo!";
+        pitBoardLapElement.textContent = "";
+        pitBoardBestElement.textContent = "";
+        pitBoardMessageElement.textContent = "";
         
         // Clear the lap chart
         lapChart.data.labels = [];
@@ -464,17 +499,30 @@ function updateDisplay() {
     // PitBoard time and messsage
     const lastLap = getLastLapData(session);
     
+    // Lap Number
+    pitBoardLapElement.textContent = "LAP " + lastLap.lap;
+    
+    // Last Lap Time + gap (exisiting)
     if (lastLap.invalid) {
         pitBoardTimeElement.textContent = "INVALID";
         pitBoardNoteElement.textContent = "Relax and recover";
     } else if (lastLap.delta === 0) {
         pitBoardTimeElement.textContent = formatLapTime(lastLap.time);
-        pitBoardNoteElement.textContent = "Best Lap";
+        pitBoardNoteElement.textContent = "Best";
     } else {
         pitBoardTimeElement.textContent = formatLapTime(lastLap.time);
-        pitBoardNoteElement.textContent = formatGap(lastLap.delta);
-    
+        pitBoardNoteElement.textContent = formatGap(lastLap.delta) + " to best";
     }
+
+    // Best Lap reference
+    if (validSession.laps.length > 0) {
+        pitBoardBestElement.textContent = "Best: " + formatLapTime(getFastestLap(validSession).time);
+    } else {
+        pitBoardBestElement.textContent = "Best: --:---";
+    }
+
+    //Lap by Lap Message
+    pitBoardMessageElement.textContent = getPitBoardMessage(session);
 
     // lap trend chart
     const chartData = getChartData(session);
