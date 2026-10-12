@@ -118,7 +118,7 @@ function getChartData(session) {
         } else if (lapData.delta === 0) {
             chartColors.push("green");
         } else {
-            chartColors.push("black"); 
+            chartColors.push("white"); 
         }
 
         if (averages) {
@@ -378,9 +378,10 @@ const lapListElement = document.getElementById("lap-list");
 const sessionInputElement = document.getElementById("session-input");
 const importSessionButton = document.getElementById("import-session-button");
 
-
 // Lap trend chart: created once, then updated in updateDisplay
 const lapChartElement = document.getElementById("lap-chart");
+
+Chart.defaults.color = "#f2f2f2";
 
 const lapChart = new Chart(lapChartElement, {
     type: "line",
@@ -391,7 +392,9 @@ const lapChart = new Chart(lapChartElement, {
                 label: "Lap Time",
                 data: [],
                 pointBackgroundColor:[],
-                pointRadius: 5
+                pointRadius: 5,
+                borderColor: "#4da3ff",
+                borderWidth: 3
             },
             {
                 label: "1st Half Avg",
@@ -412,6 +415,7 @@ const lapChart = new Chart(lapChartElement, {
     options: {
         scales: {
             y: {
+                grid: { color: "white"},
                 ticks: {
                     //Y axis labels: 72.5->1:12.500
                     callback: function (value) {
