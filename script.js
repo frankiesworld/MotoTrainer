@@ -328,6 +328,19 @@ function parsePairs(dataText) {
     return result;
 }
 
+function parseLapLine(line) {
+    const dataText = line.split(": ")[1];
+    const raw = parsePairs(dataText);
+
+    return {
+        session: Number(raw.session),
+        raceNum: Number(raw.raceNum),
+        lap: Number(raw.lapNum),
+        time: Number(raw.lapTime) / 1000,
+        invalid: raw.invalid === "1" || raw.lapTime === "0"
+    };
+}   
+
 /*----------------------------------------STORAGE----------------------------------------*/
 function saveSession(session) {
     const sessionJSON = JSON.stringify(session);
