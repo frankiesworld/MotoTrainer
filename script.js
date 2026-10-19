@@ -140,7 +140,7 @@ function getChartData(session) {
 }
 
 
-function addLap(session, time) {
+function addLap(session, time, invalid = false) {
     const newLap = {
         lap: session.laps.length + 1,
         time: time, 
@@ -340,6 +340,42 @@ function parseLapLine(line) {
         invalid: raw.invalid === "1" || raw.lapTime === "0"
     };
 }   
+
+function parseLog(text) {
+    const lines = text.split("\n");
+    let myRaceNum = null;
+    const sessions = [];
+    let currentSession = null;
+
+
+    for (const line of lines) {
+        if (line.includes("Local player identified")) {
+            const info = parsePairs(line.split(": ")[1]);
+
+            myRaceNum = Number(info.raceNum);
+        }
+        if (line.includes("RaceSession changed")) {
+            const info = parsePairs(line.split(": ")[1]);
+            currentSession = {
+                track: "MXBMRP3 Import",
+                bike: "",
+                rider: "",
+                laps: [],
+                version: SESSION_VERSION,
+                type: Number(info.session)
+            };
+            sessions.push(currentSession);
+        }
+        if (line.includes("RaceLap:")) {
+            const lap = parseLapLine(line);
+            if (lap.raceNum === myRaceNum && currentSession) {
+                addLap(currentSession, lap.time, lap.invalid);
+            }
+        }
+    }
+
+    return sessions;
+}
 
 /*----------------------------------------STORAGE----------------------------------------*/
 function saveSession(session) {
