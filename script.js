@@ -314,6 +314,20 @@ function parseLapTime(text) {
 }
 
 
+/*-------------------------------------------PARSING---------------------------------------*/
+
+// "session=7, raceNum=22, ..." → { session: "7", raceNum: "22", ... }
+function parsePairs(dataText) {
+    const result = {};
+    const pairs = dataText.split(", ");
+
+    for (const pair of pairs) {
+        const parts = pair.split("=");
+        result[parts[0]] = parts[1];
+    }
+    return result;
+}
+
 /*----------------------------------------STORAGE----------------------------------------*/
 function saveSession(session) {
     const sessionJSON = JSON.stringify(session);
