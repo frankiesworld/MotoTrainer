@@ -47,6 +47,22 @@ function getLapSpread(session) {
     return slowestLap.time - fastestLap.time;
 }
 
+function getLapStatus(lapData) {
+    if (lapData.start) {
+        return "start";
+    }
+    else if (lapData.invalid) {
+        return "invalid";
+    }
+    else if (lapData.delta === 0) {
+        return "best";
+    } else {
+        return "normal";
+        
+    }
+
+}
+
 // Gap to fastest lap time
 function getLapDeltas(session) {
     const fastestLap = getFastestLap({ laps: getValidLaps(session.laps) });
@@ -64,12 +80,14 @@ function getLapDeltas(session) {
             lap: lap.lap,
             time: lap.time,
             delta: delta,
-            invalid: lap.invalid
+            invalid: lap.invalid,
+            start: lap.start
         };
         lapDeltas.push(lapData);
     }
     return lapDeltas;
 }
+
 
 function getLastLapData(session) {
     const deltas = getLapDeltas(session);
