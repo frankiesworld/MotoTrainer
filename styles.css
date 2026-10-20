@@ -95,6 +95,10 @@ h1 {
     width: 600px;
 }
 
+
+.out-lap { color: var(--muted); }
+
+
 .pit-board p {
     margin: 4px 0;
 }

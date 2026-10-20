@@ -58,7 +58,7 @@ function getLapStatus(lapData) {
         return "best";
     } else {
         return "normal";
-        
+
     }
 
 }
@@ -146,12 +146,16 @@ function getChartData(session) {
         chartLabels.push("Lap " + lapData.lap);
         chartTimes.push(lapData.time);
 
-        if (lapData.invalid) {
+        const status = getLapStatus(lapData);
+
+        if (status === "start") {
+            chartColors.push("rgba(160, 160, 160, 0.5)");
+        } else if (status === "invalid") {
             chartColors.push("red");
-        } else if (lapData.delta === 0) {
+        } else if (status === "best") {
             chartColors.push("green");
         } else {
-            chartColors.push("white"); 
+            chartColors.push("white");
         }
 
         if (averages) {
@@ -314,7 +318,10 @@ function migrateSession(saved) {
         return saved;
 }
 
-
+function startsAtOutLap(ctx) {
+    const lapData = getLapDeltas(session)[ctx.p0DataIndex];
+    return getLapStatus(lapData) === "start";
+}
 
 /*----------------------------------------FORMATTING----------------------------------------*/
 // 63.591 -> 1:03.591
@@ -492,7 +499,21 @@ const lapChart = new Chart(lapChartElement, {
                 pointBackgroundColor:[],
                 pointRadius: 5,
                 borderColor: "#4da3ff",
-                borderWidth: 3
+                borderWidth: 3,
+                segment: {
+                    borderColor: function (ctx) {
+                        if (startsAtOutLap(ctx)) {
+                            return "rgba(160, 160, 160, 0.5)";
+                        }
+                        return undefined;
+                    },
+                    borderDash: function (ctx) {
+                        if (startsAtOutLap(ctx)) {
+                            return [6, 6];
+                        }
+                        return undefined;
+                    }
+                }
             },
             {
                 label: "1st Half Avg",
@@ -529,10 +550,13 @@ const lapChart = new Chart(lapChartElement, {
                     label: function (context) {
                         const lapData = getLapDeltas(session)[context.dataIndex];
                         const time = formatLapTime(lapData.time);
+                        const status = getLapStatus(lapData);
 
-                        if (lapData.invalid) {
+                        if (status === "start") {
+                            return time + " · OUT LAP";
+                        } else if (status === "invalid") {
                             return time + " · INVALID";
-                        } else if (lapData.delta === 0) {
+                        } else if (status === "best") {
                             return time + " · BEST";
                         } else {
                             return time + " · " + formatGap(lapData.delta);
@@ -660,10 +684,15 @@ function updateDisplay() {
         lapNumber.textContent = "Lap " + lap.lap;    
         lapTime.textContent = formatLapTime(lap.time);
 
-        if (lap.invalid) {
+        const status = getLapStatus(lap);
+
+        if (status === "start") {
+            lapDelta.textContent = formatGap(lap.delta) + " ( OUT LAP )";
+            lapRow.classList.add("out-lap");
+        } else if (status === "invalid") {
             lapDelta.textContent = "( INVALID LAP )";
             lapRow.classList.add("invalid-lap");
-        } else if (lap.delta === 0) {
+        } else if (status === "best") {
             lapDelta.textContent = "( BEST LAP )";
             lapRow.classList.add("best-lap");
         } else {
