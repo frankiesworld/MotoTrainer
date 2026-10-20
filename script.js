@@ -94,6 +94,20 @@ function getValidLaps(laps) {
 }
 
 
+function keepSessionsWithLaps(sessions) {
+    const result = [];
+
+    for (const parsedSession of sessions) {
+        if (parsedSession.laps.length > 0) {
+            result.push(parsedSession);
+        }
+    }
+    
+    return result;
+}    
+    
+
+
 function getChartData(session) {
     const chartLabels = [];
     const chartTimes = [];
@@ -664,6 +678,7 @@ const lapInput = document.getElementById("lap-input");
 const addLapButton = document.getElementById("add-lap-button");
 const newSessionButton = document.getElementById("new-session-button");
 const loadHistoryButton = document.getElementById("load-history-button");
+const logFileInput = document.getElementById("log-file-input");
 
 addLapButton.addEventListener("click", function() {
     const lapTimeInput = lapInput.value;
@@ -720,4 +735,36 @@ loadHistoryButton.addEventListener("click", function() {
     }
 });
 
+
+logFileInput.addEventListener("change", function () {
+    const file = logFileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function () {
+        const text = reader.result;
+        const sessions = keepSessionsWithLaps(parseLog(text));
+        
+        if (sessions.length === 0) {
+            alert ("No laps found for you in this log");
+            return;
+        }
+
+        for(const parsedSession of sessions) {
+            archiveSession(parsedSession, sessionHistory);
+
+            const latest = sessions[sessions.length - 1];
+            restoreSession(session, latest);
+
+        }
+
+        saveHistory(sessionHistory);
+        saveSession(session);
+        renderHistory();
+        updateDisplay() ;   
+
+        logFileInput.value = "";
+    };
+
+    reader.readAsText(file);
+});
 
