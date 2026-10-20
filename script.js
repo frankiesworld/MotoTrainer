@@ -3,6 +3,7 @@
 /*----------------------------------------------------DATA ------------------------------------------------------*/
 
 const SESSION_VERSION = 1;
+const RACE_SESSION = 7;
 const MIN_LAPS_FOR_TREND = 4;
 const THRESHOLD_PERCENT = 0.01; // 1% of average lap = "real" difference
 
@@ -85,7 +86,7 @@ function getValidLaps(laps) {
     const validLaps = [];
 
     for (const lap of laps) {
-        if (!lap.invalid) {
+        if (!lap.invalid && !lap.start) {
             validLaps.push(lap);
         }
     }
@@ -154,11 +155,12 @@ function getChartData(session) {
 }
 
 
-function addLap(session, time, invalid = false) {
+function addLap(session, time, invalid = false, start = false) {
     const newLap = {
         lap: session.laps.length + 1,
         time: time, 
-        invalid: false
+        invalid: invalid,
+        start: start,
     };
     session.laps.push(newLap);
 }
@@ -383,7 +385,8 @@ function parseLog(text) {
         if (line.includes("RaceLap:")) {
             const lap = parseLapLine(line);
             if (lap.raceNum === myRaceNum && currentSession) {
-                addLap(currentSession, lap.time, lap.invalid);
+                const isStartLap = currentSession.type === RACE_SESSION && lap.lap === 1;
+                addLap(currentSession, lap.time, lap.invalid, isStartLap);
             }
         }
     }
