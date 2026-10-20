@@ -743,7 +743,7 @@ function renderHistory() {
         const pastSession = sessionHistory[i];
         const option = document.createElement("option");
         option.value = i;
-        option.textContent = `${pastSession.date} - ${pastSession.track} - ${pastSession.laps.length} laps`;
+        option.textContent = `${pastSession.date} · ${formatSessionType(pastSession.type)} · ${pastSession.track} · ${pastSession.laps.length} laps`;
         historySelect.appendChild(option);
     }
 }
