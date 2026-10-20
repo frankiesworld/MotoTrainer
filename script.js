@@ -1,9 +1,19 @@
 /*----------------------------------------------------V1 ------------------------------------------------------*/
 
+// ===== MAP =====
+// DATA        constants, session, sessionHistory
+// LOGIC       addLap, getValidLaps, getLapDeltas, getLapStatus, getCoachNote...
+// FORMATTING  formatLapTime, formatGap, formatSessionType
+// PARSING     parsePairs, parseLapLine, parseLog, keepSessionsWithLaps
+// STORAGE     save/load session + history, archive, restore, migrate
+// DISPLAY     chart setup, updateDisplay, renderHistory
+// EVENTS      button and upload listeners
+
 /*----------------------------------------------------DATA ------------------------------------------------------*/
 
 const SESSION_VERSION = 1;
 const RACE_SESSION = 7;
+const WARMUP_SESSION = 5;
 const MIN_LAPS_FOR_TREND = 4;
 const THRESHOLD_PERCENT = 0.01; // 1% of average lap = "real" difference
 
@@ -293,7 +303,8 @@ function archiveSession(session, sessionHistory) {
         bike: session.bike,
         rider: session.rider,
         laps: session.laps.slice(), // Create a copy of the laps array
-        version: SESSION_VERSION
+        version: SESSION_VERSION,
+        type: session.type
     };
     sessionHistory.push(archivedSession);
 }
@@ -303,6 +314,7 @@ function restoreSession(session, pastSession) {
     session.bike = pastSession.bike;
     session.rider = pastSession.rider;
     session.laps = pastSession.laps.slice();
+    session.type = pastSession.type;
 }
 
 function migrateSession(saved) {
@@ -321,6 +333,11 @@ function migrateSession(saved) {
 function startsAtOutLap(ctx) {
     const lapData = getLapDeltas(session)[ctx.p0DataIndex];
     return getLapStatus(lapData) === "start";
+}
+
+function clearSession(session) {
+    session.laps = [];
+    session.type = undefined;
 }
 
 /*----------------------------------------FORMATTING----------------------------------------*/
@@ -352,6 +369,18 @@ function parseLapTime(text) {
     const totalSeconds = minutes * 60 + seconds;
 
     return totalSeconds;
+}
+
+function formatSessionType(type) {
+    if (type === RACE_SESSION) {
+        return "Race";
+    } else if (type === WARMUP_SESSION) {
+        return "Warmup";
+    } else if (type === undefined) {
+        return "Manual";
+    } else {
+        return "Session " + type;
+    }
 }
 
 
@@ -745,9 +774,9 @@ addLapButton.addEventListener("click", function() {
 
 importSessionButton.addEventListener("click", function() {
     const sessionText = sessionInputElement.value;
-    const lapTimes = sessionText.split("\n") 
+    const lapTimes = sessionText.split("\n");
     
-    session.laps = [];        // Clear existing laps before loading new ones
+    clearSession(session);
 
     for (const lapTimeText of lapTimes) {
         const lapTime = parseLapTime(lapTimeText.trim());
@@ -764,7 +793,7 @@ newSessionButton.addEventListener("click", function() {
         archiveSession(session, sessionHistory);
         saveHistory(sessionHistory);
         renderHistory();
-        session.laps = [];
+        clearSession(session);
         saveSession(session);
         updateDisplay();
     }
@@ -786,6 +815,7 @@ loadHistoryButton.addEventListener("click", function() {
 });
 
 
+/*-----------------------UPLOAD--------------------------------------*/
 logFileInput.addEventListener("change", function () {
     const file = logFileInput.files[0];
     const reader = new FileReader();
@@ -801,16 +831,15 @@ logFileInput.addEventListener("change", function () {
 
         for(const parsedSession of sessions) {
             archiveSession(parsedSession, sessionHistory);
-
-            const latest = sessions[sessions.length - 1];
-            restoreSession(session, latest);
-
         }
+
+        const latest = sessions[sessions.length - 1];
+        restoreSession(session, latest);
 
         saveHistory(sessionHistory);
         saveSession(session);
         renderHistory();
-        updateDisplay() ;   
+        updateDisplay();   
 
         logFileInput.value = "";
     };
