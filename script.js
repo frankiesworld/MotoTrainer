@@ -758,6 +758,10 @@ const addLapButton = document.getElementById("add-lap-button");
 const newSessionButton = document.getElementById("new-session-button");
 const loadHistoryButton = document.getElementById("load-history-button");
 const logFileInput = document.getElementById("log-file-input");
+const deleteHistoryButton = document.getElementById("delete-history-button");
+const clearHistoryButton = document.getElementById("clear-history-button");
+
+
 
 addLapButton.addEventListener("click", function() {
     const lapTimeInput = lapInput.value;
@@ -813,6 +817,24 @@ loadHistoryButton.addEventListener("click", function() {
         updateDisplay();
     }
 });
+
+deleteHistoryButton.addEventListener("click", function() {
+    if (sessionHistory.length === 0) {
+        alert("No sessions from history to delete.");
+        return;
+    }
+    
+    const index = Number(historySelect.value);
+    const pastSession = sessionHistory[index];
+
+    if (confirm(`Delete ${pastSession.date} · ${formatSessionType(pastSession.type)} · ${pastSession.laps.length} laps?`)) {
+        sessionHistory.splice(index, 1);
+        saveHistory(sessionHistory);
+        renderHistory();
+    }
+});
+
+
 
 
 /*-----------------------UPLOAD--------------------------------------*/
