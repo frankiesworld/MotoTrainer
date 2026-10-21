@@ -834,6 +834,22 @@ deleteHistoryButton.addEventListener("click", function() {
     }
 });
 
+clearHistoryButton.addEventListener("click", function() {
+    if (sessionHistory.length === 0) {
+        alert("No sessions from history to clear.");
+        return;
+    }
+
+    if (confirm(`Delete all ${sessionHistory.length} sessions? This can't be undone.`)) {
+        sessionHistory.splice(0);
+        saveHistory(sessionHistory);
+        renderHistory();
+
+        clearSession(session);
+        saveSession(session);
+        updateDisplay();
+    }
+});
 
 
 
